@@ -1,0 +1,48 @@
+#!groovy
+
+pipeline {
+
+    agent any
+
+    environment {
+        AWS_BIN = '/home/tomcat/.local/bin/aws'
+    }
+
+    tools{
+        jdk 'jdk8'
+        maven 'maven3'
+    }
+
+    stages {
+        
+        stage('Build') {
+            steps {
+                dir('componentSecurity'){
+                    sh "mvn clean install -Dmaven.test.skip=true"
+                }
+
+                dir('apiFeedBack'){
+                    sh "mvn clean package -Dmaven.test.skip=true"
+                }                
+            }
+        }
+        
+        
+        stage('Test') {
+            steps {
+                dir('apiFeedBack'){
+                    sh "mvn test"
+                }
+            }
+        }
+        
+        stage('Publish AWS'){
+            when { anyOf {branch 'master' ; branch 'release/*'; branch 'develop' } }
+            steps{
+                dir('apiFeedBack'){
+                    sh "sh scriptDeployAWS_DEMO.sh"
+                }
+            }
+        }
+    }
+}
